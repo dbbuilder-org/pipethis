@@ -1,0 +1,19 @@
+{
+  "name": "px-pipe-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "px-pipe-mcp": "server.mjs"
+  },
+  "description": "MCP server: render clipboard/file/text to dense PNG pages via pxpipe and return them as image blocks.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "gpt-tokenizer": "^3.4.0",
+    "pxpipe-proxy": "^0.8.0",
+    "zod": "^3.25.76"
+  }
+}
