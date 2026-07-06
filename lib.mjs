@@ -1,15 +1,31 @@
 // Shared render core for the pxpipe-image MCP server.
 // Turns text into dense PNG pages via pxpipe, with a mixed-content safety gate.
 import { execFileSync } from 'node:child_process';
+import { platform } from 'node:os';
 import { renderTextToImages } from 'pxpipe-proxy/transform';
 import { encode } from 'gpt-tokenizer';
 
+// Per-OS clipboard read commands, tried in order until one yields text.
+const CLIPBOARD_READERS = {
+  darwin: [['pbpaste', []]],
+  win32: [['powershell', ['-NoProfile', '-Command', 'Get-Clipboard']]],
+  linux: [
+    ['wl-paste', ['--no-newline']],
+    ['xclip', ['-selection', 'clipboard', '-o']],
+    ['xsel', ['-b']],
+  ],
+};
+
 export function readClipboard() {
-  try {
-    return execFileSync('pbpaste', { encoding: 'utf8' }) ?? '';
-  } catch {
-    return ''; // no pbpaste (non-mac) or empty
+  for (const [cmd, args] of CLIPBOARD_READERS[platform()] || []) {
+    try {
+      const out = execFileSync(cmd, args, { encoding: 'utf8' });
+      if (out && out.trim().length > 0) return out;
+    } catch {
+      // reader missing or clipboard empty — try the next one
+    }
   }
+  return '';
 }
 
 function fidelityWarnings(text, droppedChars) {

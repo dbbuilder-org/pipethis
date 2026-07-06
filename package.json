@@ -1,12 +1,22 @@
 {
-  "name": "px-pipe-mcp",
+  "name": "pipethis",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "px-pipe-mcp": "server.mjs"
+    "pipethis": "render.mjs"
   },
-  "description": "MCP server: render clipboard/file/text to dense PNG pages via pxpipe and return them as image blocks.",
+  "description": "pipethis — render large pastes/files/clipboard to dense pxpipe PNG image blocks (with a verbatim byte-exact appendix) to cut Claude input tokens. MCP server + CLI + Claude Code skill.",
+  "files": [
+    "lib.mjs",
+    "server.mjs",
+    "render.mjs",
+    "skill/",
+    "install.sh",
+    "install.ps1",
+    "uninstall.sh",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test"
   },

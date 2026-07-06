@@ -70,7 +70,7 @@ const gate = {
       'text below the image; default true'),
 };
 
-const server = new McpServer({ name: 'px-pipe-mcp', version: '0.1.0' });
+const server = new McpServer({ name: 'pipethis', version: '0.1.0' });
 
 server.registerTool('paste_clipboard_as_image', {
   description:
