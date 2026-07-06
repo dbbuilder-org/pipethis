@@ -1,7 +1,7 @@
 // Unit tests for the render core (renderBlob). Run: node --test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderBlob } from './lib.mjs';
+import { renderBlob, extractExactValues } from './lib.mjs';
 
 const big = 'The quick brown fox jumps over the lazy dog. '.repeat(200);   // ~9000 chars
 const huge = 'The quick brown fox jumps over the lazy dog. '.repeat(6000); // ~270k chars
@@ -66,4 +66,32 @@ test('plain prose has no code warning', async () => {
   const r = await renderBlob(prose);
   assert.equal(r.ok, true);
   assert.equal(r.warnings.length, 0, JSON.stringify(r.warnings));
+});
+
+test('extractExactValues pulls code blocks, env keys, urls, guids, emails', () => {
+  const doc = [
+    'redirect exactly:',
+    '```',
+    'https://billboard-api-8692.onrender.com/api/auth/sso/callback',
+    '```',
+    'set Entra__ClientId and Entra__ClientSecret on the API',
+    'tenant 11111111-2222-3333-4444-555555555555, ping ops@billboard.io',
+  ].join('\n');
+  const vals = extractExactValues(doc);
+  const flat = vals.map((v) => v.value);
+  assert.ok(flat.includes('https://billboard-api-8692.onrender.com/api/auth/sso/callback'));
+  assert.ok(flat.includes('Entra__ClientId') && flat.includes('Entra__ClientSecret'));
+  assert.ok(flat.some((v) => /^11111111-2222-3333-4444-555555555555$/.test(v)));
+  assert.ok(flat.includes('ops@billboard.io'));
+  // deduped by value, and each entry carries a typed key
+  assert.equal(new Set(flat).size, flat.length);
+  assert.ok(vals.every((v) => /^[a-z_]+\.\d+$/.test(v.key)));
+});
+
+test('renderBlob attaches exactValues by default, empty when disabled', async () => {
+  const withUrl = 'see https://example.com/x for details. '.repeat(100);
+  const on = await renderBlob(withUrl);
+  assert.ok(on.exactValues.some((v) => v.value === 'https://example.com/x'));
+  const off = await renderBlob(withUrl, { extractExact: false });
+  assert.equal(off.exactValues.length, 0);
 });

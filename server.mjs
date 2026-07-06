@@ -46,7 +46,18 @@ function toContent(result) {
     data: Buffer.from(p.png).toString('base64'),
     mimeType: 'image/png',
   }));
-  return { content: [{ type: 'text', text: summary }, ...images] };
+  const parts = [{ type: 'text', text: summary }, ...images];
+
+  // Append byte-exact tokens as verbatim text — the image is lossy on these, so
+  // trust this appendix over the pixels for IDs, URLs, env keys, hashes, etc.
+  if (result.exactValues && result.exactValues.length) {
+    const lines = result.exactValues.map((v) => `${v.key}: ${v.value}`).join('\n');
+    parts.push({
+      type: 'text',
+      text: `Exact values (verbatim — trust these over the image):\n${lines}`,
+    });
+  }
+  return { content: parts };
 }
 
 const gate = {
@@ -54,6 +65,9 @@ const gate = {
     .describe('minimum source chars before imaging is worthwhile (default 2000)'),
   exact: z.boolean().optional()
     .describe('true = do not image, keep as text (content must survive byte-exact)'),
+  extractExact: z.boolean().optional()
+    .describe('append byte-exact tokens (URLs, IDs, env keys, hashes) as verbatim ' +
+      'text below the image; default true'),
 };
 
 const server = new McpServer({ name: 'px-pipe-mcp', version: '0.1.0' });
@@ -64,21 +78,22 @@ server.registerTool('paste_clipboard_as_image', {
     'image blocks (~3x cheaper than text tokens). For large gist-tolerant logs/docs/' +
     'transcripts. Refuses tiny content or exact-fidelity content (IDs/hashes/code).',
   inputSchema: gate,
-}, async ({ minChars, exact }) => toContent(await renderBlob(readClipboard(), { minChars, exact })));
+}, async ({ minChars, exact, extractExact }) =>
+  toContent(await renderBlob(readClipboard(), { minChars, exact, extractExact })));
 
 server.registerTool('render_file_as_image', {
   description:
     'Read a file and render it to dense PNG page(s) via pxpipe, returned as image ' +
     'blocks. Refuses tiny or exact-fidelity content.',
   inputSchema: { path: z.string().describe('absolute path to the file'), ...gate },
-}, async ({ path, minChars, exact }) => {
+}, async ({ path, minChars, exact, extractExact }) => {
   let text = '';
   try {
     text = readFileSync(path, 'utf8');
   } catch (e) {
     return { content: [{ type: 'text', text: `Cannot read file: ${e.message}` }], isError: true };
   }
-  return toContent(await renderBlob(text, { minChars, exact }));
+  return toContent(await renderBlob(text, { minChars, exact, extractExact }));
 });
 
 server.registerTool('render_text_as_image', {
@@ -87,7 +102,8 @@ server.registerTool('render_text_as_image', {
     'Note: text passed here is already tokenized in the call — most useful when the ' +
     'text came from another tool result. Refuses tiny or exact-fidelity content.',
   inputSchema: { text: z.string().describe('the text to render'), ...gate },
-}, async ({ text, minChars, exact }) => toContent(await renderBlob(text, { minChars, exact })));
+}, async ({ text, minChars, exact, extractExact }) =>
+  toContent(await renderBlob(text, { minChars, exact, extractExact })));
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

@@ -69,6 +69,26 @@ test('render_text_as_image: stores the page to disk and reports the path', async
   assert.ok(existsSync(m[1]), `stored page should exist on disk: ${m[1]}`);
 });
 
+test('render_text_as_image: appends a verbatim exact-values block after the image', async () => {
+  const text = ('Set Entra__ClientId at ' +
+    'https://billboard-api-8692.onrender.com/api/auth/sso/callback for tenant ' +
+    '11111111-2222-3333-4444-555555555555. ').repeat(20);
+  const res = await call('render_text_as_image', { text });
+  const idxImg = res.content.findIndex((c) => c.type === 'image');
+  const idxApp = res.content.findIndex((c) => c.type === 'text' && /exact values/i.test(c.text));
+  assert.ok(idxApp > idxImg, 'exact-values block should come after the image');
+  const appendix = res.content[idxApp].text;
+  assert.match(appendix, /Entra__ClientId/);
+  assert.match(appendix, /billboard-api-8692\.onrender\.com\/api\/auth\/sso\/callback/);
+  assert.match(appendix, /11111111-2222-3333-4444-555555555555/);
+});
+
+test('render_text_as_image: extractExact:false omits the appendix', async () => {
+  const text = 'plain https://example.com/y notes here. '.repeat(80);
+  const res = await call('render_text_as_image', { text, extractExact: false });
+  assert.ok(!res.content.some((c) => c.type === 'text' && /exact values/i.test(c.text)));
+});
+
 test('render_text_as_image: tiny input refused, no image', async () => {
   const res = await call('render_text_as_image', { text: 'hi' });
   assert.ok(!kinds(res).includes('image'));

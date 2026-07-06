@@ -25,6 +25,12 @@ any fidelity warnings) followed by one image block per page.
   text. Use for anything that must survive byte-exact (IDs, hashes, code you'll
   edit) — pxpipe is lossy on dense exact strings.
 - A heuristic flags likely code/exact data and warns even when it renders.
+- **Exact-values appendix** (`extractExact`, default **true**) — best of both:
+  the image carries the gist cheaply, and byte-exact tokens are appended below it
+  as verbatim text so nothing lossy has to be trusted from pixels. Extracts
+  code-block contents, env keys (`Foo__Bar`), URLs, GUIDs, emails, hashes, and
+  inline-code spans, deduped and typed as `<type>.<n>: <value>` (fragments of an
+  already-captured value are suppressed). Set `extractExact: false` to omit it.
 
 Refusals come back as a plain-text `content` block naming the `reason`
 (`no_input`, `below_min_chars`, `exact_requested`, `render_error`) — a decision,
