@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -59,6 +59,14 @@ test('render_text_as_image: image block + savings summary', async () => {
   // base64 decodes to a real PNG (magic bytes \x89PNG).
   const bytes = Buffer.from(img.data, 'base64');
   assert.deepEqual([...bytes.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47]);
+});
+
+test('render_text_as_image: stores the page to disk and reports the path', async () => {
+  const res = await call('render_text_as_image', { text: big });
+  const summary = textOf(res);
+  const m = summary.match(/(\/[^\s]+\/page-1\.png)/);
+  assert.ok(m, `expected a stored page path in summary, got: ${summary}`);
+  assert.ok(existsSync(m[1]), `stored page should exist on disk: ${m[1]}`);
 });
 
 test('render_text_as_image: tiny input refused, no image', async () => {

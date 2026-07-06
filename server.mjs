@@ -5,8 +5,23 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import { renderBlob, readClipboard } from './lib.mjs';
+
+// Persist rendered pages to ~/.pxpipe/pastes/<ts>/ so they can be re-referenced
+// later. Returns the absolute page paths.
+function persist(pages) {
+  const dir = join(homedir(), '.pxpipe', 'pastes', String(Date.now()));
+  mkdirSync(dir, { recursive: true });
+  return pages.map((p, i) => {
+    const path = join(dir, `page-${i + 1}.png`);
+    writeFileSync(path, p.png);
+    return path;
+  });
+}
 
 // Map a renderBlob result to an MCP tool result (text summary + image blocks).
 function toContent(result) {
@@ -20,10 +35,11 @@ function toContent(result) {
       }],
     };
   }
+  const paths = persist(result.pages);
   const summary =
     `Rendered ${result.chars} chars to ${result.pages.length} image page(s): ` +
     `${result.textTokens} text tokens -> ${result.imageTokens} image tokens ` +
-    `(~${result.savedPct}% saved).` +
+    `(~${result.savedPct}% saved). Stored at:\n- ${paths.join('\n- ')}` +
     (result.warnings.length ? `\nWarnings:\n- ${result.warnings.join('\n- ')}` : '');
   const images = result.pages.map((p) => ({
     type: 'image',
