@@ -7,6 +7,9 @@
     "pipethis": "render.mjs"
   },
   "description": "pipethis — render large pastes/files/clipboard to dense pxpipe PNG image blocks (with a verbatim byte-exact appendix) to cut Claude input tokens. MCP server + CLI + Claude Code skill.",
+  "license": "MIT",
+  "homepage": "https://github.com/dbbuilder-org/pipethis#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/dbbuilder-org/pipethis.git" },
   "files": [
     "lib.mjs",
     "server.mjs",
@@ -15,6 +18,7 @@
     "install.sh",
     "install.ps1",
     "uninstall.sh",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
